@@ -1,0 +1,69 @@
+{
+  "ffmpeg_path": "",
+  "ffprobe_path": "",
+  "video_loops": 2,
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "fps": 30,
+  "codec": "libx264",
+  "preset": "fast",
+  "crf": 23,
+  "zoom": {
+    "min_intensity": 0.05,
+    "max_intensity": 0.15
+  },
+  "avatar": {
+    "scales": [0.95, 1.0, 1.05],
+    "base_width_ratio": 0.68
+  },
+  "avatar_pose": {
+    "enabled": true,
+    "change_interval_seconds": 5.0,
+    "min_segment_seconds": 4.0,
+    "transition_min_seconds": 0.0,
+    "transition_max_seconds": 0.0,
+    "pose_names": ["bottom_right", "bottom_left"]
+  },
+  "chroma_key": {
+    "color": "0x00FF00",
+    "similarity": 0.2,
+    "blend": 0.0
+  },
+  "directories": {
+    "avatars": "avatar",
+    "backgrounds": "background",
+    "used_images": "imagem-utilizada",
+    "output": "output"
+  },
+  "database": {
+    "path": "history.db"
+  },
+  "animation": {
+    "enabled": true,
+    "style": "dynamic_tiktok",
+    "min_zoom": 0.8,
+    "pan_intensity": 0.6,
+    "entry_zoom_seconds": 0.5,
+    "exit_zoom_seconds": 0.5
+  },
+  "price_lock": {
+    "enabled": true,
+    "padding_ratio": 0.28,
+    "pixel_block_ratio": 0.14,
+    "overlay_alpha": 215,
+    "bar_color": "#FF7A1A",
+    "lock_color": "#FFFFFF",
+    "ocr_languages": ["pt"],
+    "ocr_min_confidence": 0.15,
+    "ocr_width_ths": 0.3,
+    "badge_enabled": true,
+    "badge_size": 320,
+    "badge_fps": 15,
+    "badge_loop_seconds": 1.6
+  },
+  "product_identification": {
+    "method": "groq"
+  }
+}

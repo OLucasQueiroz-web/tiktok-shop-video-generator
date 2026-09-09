@@ -1,0 +1,47 @@
+# Segredos / ambiente
+.env
+.env.local
+*.env
+
+# Dependências
+node_modules/
+__pycache__/
+*.pyc
+
+# Build / dist / instaladores
+dist/
+build/
+release/
+release-installer/
+*.exe
+*.zip
+
+# Logs e arquivos de debug
+*.log
+build_log.txt
+debug_out.txt
+err.txt
+ocr_err.txt
+ocr_out.txt
+
+# Banco de dados local / histórico
+history.db
+*.db
+
+# Mídia e assets gerados/processados (volumosos, específicos da máquina)
+avatar/
+background/
+produtos/
+produtos-virais/
+imagem-utilizada/
+output/
+
+# Dados de contas/sessão local
+tiktok-accounts.json
+
+# Cache de teste local
+scratch_test_assets/
+
+# Editor / SO
+.DS_Store
+Thumbs.db

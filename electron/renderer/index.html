@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>TikTok Shop -- Gerador de Vídeos</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>TikTok Shop</h1>
+      <p class="subtitle">Gerador de vídeos e postagem automática</p>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="contas">
+        <span class="tab-icon">1</span>Contas e avatares
+      </button>
+      <button class="tab-btn" data-tab="produtos">
+        <span class="tab-icon">2</span>Produtos
+      </button>
+      <button class="tab-btn" data-tab="gerar">
+        <span class="tab-icon">3</span>Gerar e publicar
+      </button>
+      <button class="tab-btn" data-tab="config">
+        <span class="tab-icon">⚙</span>Configurações
+      </button>
+    </nav>
+
+    <main>
+      <div class="tab-panel active" data-panel="contas">
+        <section class="card">
+          <h2>Contas do TikTok</h2>
+          <p class="hint">
+            Cadastre a conta, clique em "Realizar login" e faça o login normalmente na janela do
+            Chrome que abrir — o app reconhece sozinho quando terminar. Cada conta tem exatamente
+            um vídeo de avatar e publica os vídeos da sua pasta correspondente.
+          </p>
+          <div id="accounts-list" class="entity-list"></div>
+          <div class="row">
+            <button id="add-account-btn" class="primary">+ Adicionar conta</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="tab-panel" data-panel="produtos">
+        <p class="hint">
+          Um card por conta -- adicione aqui as fotos de produto que vão gerar vídeo pra ela.
+        </p>
+        <div id="products-by-account"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="gerar">
+        <section class="card">
+          <h2>Pasta de saída</h2>
+          <div class="row">
+            <span id="output-label"></span>
+            <button id="choose-output-btn">Escolher pasta...</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Gerar vídeos</h2>
+          <div class="row">
+            <label class="checkbox-row">
+              <input type="checkbox" id="auto-post-checkbox" checked />
+              Postar automaticamente no TikTok depois que todos os vídeos forem gerados
+            </label>
+          </div>
+          <div class="row action-row">
+            <button id="generate-btn" class="primary">Gerar vídeos</button>
+            <button id="dry-run-btn">Testar (dry-run)</button>
+            <button id="history-btn">Ver histórico</button>
+          </div>
+          <div class="progress-row">
+            <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+            <span id="progress-label" class="hint"></span>
+          </div>
+        </section>
+
+        <section class="card log-card">
+          <h2>Log</h2>
+          <pre id="log"></pre>
+        </section>
+      </div>
+
+      <div class="tab-panel" data-panel="config">
+        <section class="card">
+          <h2>Chaves da API Groq</h2>
+          <p class="hint">
+            Usada pra reconhecer o produto a partir da foto. Adicione quantas chaves quiser — o
+            app troca sozinho pra próxima quando uma atingir o limite de uso. Crie grátis em
+            <b>console.groq.com</b>.
+          </p>
+          <div id="apikeys-list" class="entity-list"></div>
+          <div class="row">
+            <input type="password" id="apikey-input" placeholder="Cole uma chave da API Groq..." />
+            <button id="apikey-add-btn" class="primary">+ Adicionar</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <dialog id="history-dialog">
+      <h2>Histórico de vídeos gerados</h2>
+      <div class="table-wrap">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Avatar</th>
+              <th>Estilo</th>
+              <th>Status</th>
+              <th>Produto</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="history-summary" class="hint"></p>
+      <div class="row">
+        <button id="history-close-btn">Fechar</button>
+      </div>
+    </dialog>
+
+    <dialog id="account-dialog">
+      <h2 id="account-dialog-title">Adicionar conta</h2>
+      <div class="row">
+        <label for="account-label">Nome:</label>
+        <input id="account-label" placeholder="Conta 1" />
+      </div>
+      <div class="row">
+        <label for="account-email">E-mail / usuário:</label>
+        <input id="account-email" placeholder="email@exemplo.com" />
+      </div>
+      <div class="row">
+        <label for="account-folder">Pasta dos vídeos:</label>
+        <input list="account-folder-options" id="account-folder" placeholder="ex: avatar2" />
+        <datalist id="account-folder-options"></datalist>
+      </div>
+      <p class="hint">
+        Os vídeos gerados em <b>output/DD-MM/&lt;pasta&gt;/</b> serão postados por esta conta.
+        Use uma pasta por conta -- normalmente o nome do avatar que gera os vídeos dela.
+        A senha não é pedida aqui: depois de salvar, use "Realizar login" na lista de contas
+        pra logar direto na janela do Chrome.
+      </p>
+      <div class="row">
+        <button id="account-save-btn" class="primary">Salvar conta</button>
+        <button id="account-cancel-btn">Cancelar</button>
+      </div>
+    </dialog>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

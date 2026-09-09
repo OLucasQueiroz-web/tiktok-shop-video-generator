@@ -1,0 +1,12 @@
+# ── Identificação de produto (API Groq multimodal) ────────────────────────────
+groq>=0.11.0
+python-dotenv>=1.0.0
+
+# ── Bloqueio de preço (OCR + barra pixelada + GIF do cadeado) ─────────────────
+# O EasyOCR roda sempre com gpu=False (ver src/price_blocker.py) -- instale o
+# torch/torchvision CPU-only para não inflar o build do .exe com DLLs de GPU
+# não usadas:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+easyocr>=1.7.0
+pillow>=10.0.0
+numpy>=1.24.0

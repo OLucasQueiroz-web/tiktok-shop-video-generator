@@ -1,0 +1,41 @@
+{
+  "name": "tiktok-shop-video-generator",
+  "version": "1.0.0",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "electron": "electron .",
+    "dist": "electron-builder --win dir",
+    "dist:installer": "electron-builder --config electron-builder.installer.json --win",
+    "upload": "node electron/tiktok_uploader.js"
+  },
+  "dependencies": {
+    "playwright-core": "^1.61.1",
+    "puppeteer": "^25.3.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.tiktokshop.videogenerator",
+    "productName": "TikTok Shop Video Generator",
+    "asar": true,
+    "files": [
+      "electron/**/*",
+      "package.json",
+      "!node_modules"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "dir"
+      ]
+    }
+  }
+}
