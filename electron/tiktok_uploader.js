@@ -28,6 +28,7 @@ const path = require("path");
 
 const { launchChrome, resolveChromePath } = require("./chrome_profile");
 const accountsStore = require("./tiktok_accounts");
+const { getOutputFolder } = require("./core");
 
 const UPLOAD_URL = "https://www.tiktok.com/tiktokstudio/upload?from=creator_center&tab=video";
 const LOGIN_WAIT_TIMEOUT_MS = 5 * 60 * 1000; // até 5 min pra login manual na primeira vez
@@ -51,7 +52,15 @@ const PRODUCT_LINK_STEP_TEXTS = ["Produtos", "Products"];
 const ADD_PRODUCT_LINKS_HEADING_TEXTS = ["Adicionar links de produto", "Add product links"];
 const STOCK_HEADER_TEXTS = ["Stock", "Estoque"];
 
-const OUTPUT_BASE_DIR = "C:\\Users\\lucas\\OneDrive\\Desktop\\TikTok Shop\\TikTok Shop\\Automação\\output";
+// Antes um caminho fixo dentro da pasta do projeto (que fica em OneDrive) --
+// gerar dezenas de vídeos ali fazia o OneDrive sincronizar tudo em paralelo
+// com a automação rodando, sobrecarregando disco/CPU o suficiente pro Chrome
+// ficar lento demais pra responder ao protocolo do Puppeteer (ver
+// forceCloseBrowser). Agora lê de config.json (mesma fonte que o Python e a
+// GUI usam -- ver core.js/getOutputFolder) em vez de duplicar o caminho.
+function outputBaseDir() {
+  return getOutputFolder(path.join(__dirname, ".."));
+}
 const USED_VIDEOS_DIR = "C:\\Users\\lucas\\OneDrive\\onedrive\\Documentos\\upload videos\\utilizados";
 
 /**
@@ -80,6 +89,38 @@ async function launchBrowser(avatar) {
   return launchChrome(userDataDir);
 }
 
+/**
+ * Fecha o browser sem arriscar travar pra sempre: browser.close() também
+ * depende do Chrome responder ao protocolo, então se o Chrome já estiver
+ * "surdo" (ver protocolTimeout em chrome_profile.js -- foi exatamente esse
+ * sintoma que causou os "Runtime.callFunctionOn timed out" em produção) o
+ * close() ficaria pendurado também. Dá um prazo curto pro close educado e,
+ * se estourar, mata o processo do Chrome na marra -- garante que não sobra
+ * chrome.exe zumbi consumindo memória/CPU pra próxima tentativa.
+ */
+async function forceCloseBrowser(browser) {
+  try {
+    await Promise.race([
+      browser.close(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("close timeout")), 8000)),
+    ]);
+  } catch (_) {
+    try {
+      browser.process()?.kill("SIGKILL");
+    } catch (_) {
+      /* ignore */
+    }
+  }
+}
+
+/** Roda uma tarefa best-effort (screenshot, descartar rascunho) com prazo curto -- não deixa a limpeza pendurar tanto quanto a falha original quando o Chrome já está travado. */
+async function withShortTimeout(promise, ms = 8000) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(resolve, ms)),
+  ]);
+}
+
 /** dd-mm de hoje, no mesmo formato das pastas de output (ex: "04-09"). */
 function todayFolderName() {
   const now = new Date();
@@ -96,7 +137,7 @@ function productNameFromFilename(filename) {
 }
 
 function getPendingVideos(dateFolder, avatar) {
-  const dir = path.join(OUTPUT_BASE_DIR, dateFolder, avatar);
+  const dir = path.join(outputBaseDir(), dateFolder, avatar);
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir)
@@ -784,7 +825,7 @@ async function runForAvatar(avatar, dateFolder, { baseDir = process.cwd(), dryRu
   }
   console.log(`[tiktok_uploader] [${avatar}] ${videos.length} vídeo(s) pendente(s).`);
 
-  const browser = await launchBrowser(avatar);
+  let browser = await launchBrowser(avatar);
   let index = 0;
   try {
     for (const videoPath of videos) {
@@ -796,14 +837,24 @@ async function runForAvatar(avatar, dateFolder, { baseDir = process.cwd(), dryRu
         await processVideo(browser, videoPath, { baseDir, dryRun });
       } catch (err) {
         console.error(`[tiktok_uploader] [${avatar}] Falhou em "${path.basename(videoPath)}": ${err.message}`);
-        const [page] = await browser.pages();
-        await saveDebugScreenshot(page, baseDir, "erro").catch(() => {});
-        await bestEffortDiscardDraft(page);
+        await withShortTimeout(
+          (async () => {
+            const [page] = await browser.pages();
+            await saveDebugScreenshot(page, baseDir, "erro").catch(() => {});
+            await bestEffortDiscardDraft(page);
+          })().catch(() => {})
+        );
+        // Um Chrome que travou o suficiente pra estourar o protocolTimeout
+        // raramente volta a responder sozinho -- insistir na mesma instância
+        // só repetiria a mesma falha nos próximos vídeos da fila. Reabre do
+        // zero antes de seguir.
+        await forceCloseBrowser(browser);
+        browser = await launchBrowser(avatar);
       }
       index++;
     }
   } finally {
-    await browser.close();
+    await forceCloseBrowser(browser);
   }
 }
 
@@ -843,22 +894,43 @@ if (require.main === module) {
       }
       const baseDir = path.join(__dirname, "..");
       console.log(`[tiktok_uploader] Modo arquivo único: "${filePath}" (${avatar})${dryRun ? " | DRY-RUN" : ""}`);
-      const browser = await launchBrowser(avatar);
-      try {
-        const resultado = await processVideo(browser, filePath, { baseDir, dryRun });
-        console.log(`[tiktok_uploader] Resultado: ${resultado.status}`);
-      } catch (err) {
-        console.error(`[tiktok_uploader] Falhou: ${err.message}`);
+
+      // Retry com navegador novo: um Chrome que trava a ponto de estourar o
+      // protocolTimeout (ver chrome_profile.js) normalmente não volta a
+      // responder sozinho -- insistir na MESMA instância só repete a mesma
+      // falha (foi o que aconteceu em produção: 3 vídeos seguidos falhando
+      // igual pro mesmo avatar). Fecha na marra e tenta de novo do zero antes
+      // de desistir de vez.
+      const MAX_ATTEMPTS = 2;
+      let lastErr = null;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const browser = await launchBrowser(avatar);
         try {
-          const [page] = await browser.pages();
-          await saveDebugScreenshot(page, baseDir, "erro-single").catch(() => {});
-          await bestEffortDiscardDraft(page);
-        } catch (_) {
-          /* ignore */
+          const resultado = await processVideo(browser, filePath, { baseDir, dryRun });
+          console.log(`[tiktok_uploader] Resultado: ${resultado.status}`);
+          lastErr = null;
+          await forceCloseBrowser(browser);
+          break;
+        } catch (err) {
+          lastErr = err;
+          console.error(`[tiktok_uploader] Falhou (tentativa ${attempt}/${MAX_ATTEMPTS}): ${err.message}`);
+          await withShortTimeout(
+            (async () => {
+              const [page] = await browser.pages();
+              await saveDebugScreenshot(page, baseDir, "erro-single").catch(() => {});
+              await bestEffortDiscardDraft(page);
+            })().catch(() => {})
+          );
+          await forceCloseBrowser(browser);
+          if (attempt < MAX_ATTEMPTS) {
+            console.log("[tiktok_uploader] Tentando de novo com um navegador novo...");
+            await sleep(3000);
+          }
         }
+      }
+      if (lastErr) {
+        console.error(`[tiktok_uploader] Falhou definitivamente após ${MAX_ATTEMPTS} tentativa(s): ${lastErr.message}`);
         process.exitCode = 1;
-      } finally {
-        await browser.close();
       }
       return;
     }

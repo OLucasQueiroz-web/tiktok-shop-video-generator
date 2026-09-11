@@ -39,6 +39,13 @@ async function launchChrome(userDataDir) {
     userDataDir,
     headless: false,
     defaultViewport: null,
+    // Default do Puppeteer é 180s -- em máquina sob carga pesada (geração de
+    // vídeo + várias janelas de Chrome + sincronização do OneDrive rodando
+    // junto) o Chrome pode demorar mais que isso pra responder um comando do
+    // protocolo sem estar de fato travado. 5 min dá mais margem antes de
+    // desistir (ver forceCloseBrowser em tiktok_uploader.js pro caso de
+    // realmente travar).
+    protocolTimeout: 5 * 60 * 1000,
   });
 }
 

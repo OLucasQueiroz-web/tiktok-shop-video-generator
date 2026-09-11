@@ -42,7 +42,7 @@
     "avatars": "C:/Users/lucas/OneDrive/Desktop/TikTok Shop/TikTok Shop/Automação/avatar",
     "backgrounds": "C:/Users/lucas/OneDrive/Desktop/TikTok Shop/TikTok Shop/Automação/background",
     "used_images": "C:/Users/lucas/OneDrive/Desktop/TikTok Shop/TikTok Shop/Automação/imagem-utilizada",
-    "output": "C:/Users/lucas/OneDrive/Desktop/TikTok Shop/TikTok Shop/Automação/output"
+    "output": "C:\\Users\\lucas\\OneDrive\\Desktop\\TikTok Shop\\TikTok Shop\\Automação\\output"
   },
   "database": {
     "path": "C:/Users/lucas/OneDrive/Desktop/TikTok Shop/TikTok Shop/Automação/history.db"

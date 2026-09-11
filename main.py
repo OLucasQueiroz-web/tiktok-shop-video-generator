@@ -233,6 +233,9 @@ def _print_history(config, day_label: Optional[str], video_type: Optional[str], 
     return 0
 
 
+MAX_IMAGES_PER_AVATAR = 40
+
+
 def _pair_images_with_avatars(
     images_dir: str,
     flat_avatars: list,
@@ -245,6 +248,12 @@ def _pair_images_with_avatars(
     avatar2/*, images_dir/avatar3/*, ... -> a imagem só gera vídeo para o
     avatar cujo nome (stem do arquivo de vídeo) bate com o nome da
     subpasta. Subpasta sem avatar correspondente é ignorada (com aviso).
+
+    Cada avatar processa no máximo MAX_IMAGES_PER_AVATAR imagens por
+    execução (na ordem alfabética de get_images_by_avatar_folder()) -- o
+    excedente não entra nesta lista e portanto não é tocado (nem gerado,
+    nem movido por move_to_used()), ficando pendente em images_dir/<avatar>/
+    pra ser pego numa próxima execução.
 
     Imagens soltas direto em images_dir (sem subpasta) não têm mais um
     avatar implícito -- são ignoradas com aviso (todo produto precisa
@@ -273,6 +282,14 @@ def _pair_images_with_avatars(
                 group_name, images_dir,
             )
             continue
+        if len(imgs) > MAX_IMAGES_PER_AVATAR:
+            logger.info(
+                "  '%s': %d imagem(ns) encontradas, processando só as %d primeiras "
+                "(limite por avatar) -- as %d restante(s) ficam em '%s/%s' pra próxima execução.",
+                group_name, len(imgs), MAX_IMAGES_PER_AVATAR,
+                len(imgs) - MAX_IMAGES_PER_AVATAR, images_dir, group_name,
+            )
+            imgs = imgs[:MAX_IMAGES_PER_AVATAR]
         for img in imgs:
             pairs.append((img, [target]))
     return pairs
